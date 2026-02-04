@@ -13,9 +13,19 @@ export async function chatHandler(io: Server, socket: Socket, redisPub: Redis) {
   socket.on("send_message", async (payload: MessagePayload) => {
     const messagePromise = saveMessage(payload, user.id);
 
-    const [result, error] = await tryCatch(messagePromise);
+    const [msg, error] = await tryCatch(messagePromise);
 
-    let msg = result?.rows[0];
+    if (error) {
+      //handle message save error here
+      socket.emit("message_error", "Unable to send message");
+      return;
+    }
+
+    socket.emit("message_sent", {
+      tempId: payload.id,
+      status: msg.status,
+      error: error ? "Failed to send message" : null,
+    });
 
     await redisPub
       .publish(`chat:new_message`, JSON.stringify(msg))

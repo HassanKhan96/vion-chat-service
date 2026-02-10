@@ -47,6 +47,9 @@ subClient.on("error", (err) => {
 
   const connection = (socket: Socket) => {
     console.log("new socket connected: ", socket.id);
+
+    socket.emit("on-connection", { message: "Connection establised" });
+
     presenceHandler(io, socket, pubClient);
     chatHandler(io, socket, pubClient);
   };

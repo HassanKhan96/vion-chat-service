@@ -5,7 +5,7 @@ type NextFunction = (err?: ExtendedError | undefined) => void;
 
 export const authMiddleware = async (socket: Socket, next: NextFunction) => {
   try {
-    const token = socket.handshake?.headers.auth as string;
+    const token = socket.handshake?.auth?.token;
 
     if (!token) {
       return next(new Error("Authentication error: Token not provided"));

@@ -9,3 +9,8 @@ export interface Message extends MessagePayload {
   from: string;
   status: "pending" | "sent" | "delivered" | "seen";
 }
+
+export interface ReadMessagePayload {
+  conversation_id: string;
+  sender_id: string;
+}

@@ -2,7 +2,10 @@ import { getDBClient } from "../config/configs/db";
 import { getConversationId } from "../helpers/conversation";
 import { CustomError, QueryError } from "../helpers/error";
 import { tryCatch } from "../helpers/tryCatch.helper";
-import { MessagePayload } from "../interfaces/message.interface";
+import {
+  MessagePayload,
+  ReadMessagePayload,
+} from "../interfaces/message.interface";
 
 export const saveMessage = async (payload: MessagePayload, from: string) => {
   const client = await getDBClient();
@@ -48,16 +51,18 @@ export const saveMessage = async (payload: MessagePayload, from: string) => {
 
   const messageQuery = `
    INSERT INTO messages(conversation_id, sender_id, content, created_at)
-   VALUES ($1, $2, $3, $4)
+   VALUES ($1, $2, $3, $4) RETURNING *
   `;
 
   let message_promise = client.query(messageQuery, [
     conversation_id,
     from,
     payload.content,
-    payload.created_at,
+    new Date(payload.created_at),
   ]);
   let [message_result, message_error] = await tryCatch(message_promise);
+
+  let message = message_result?.rows?.[0];
 
   if (message_error) {
     console.log("message error: ", message_error);
@@ -65,12 +70,32 @@ export const saveMessage = async (payload: MessagePayload, from: string) => {
   }
 
   let msg = {
-    from,
+    id: message.id,
+    conversation_id: message.conversation_id,
+    sender_id: from,
     to: payload.to,
     content: payload.content,
     status: "sent",
+    sender: "them",
     created_at: payload.created_at,
   };
 
   return msg;
+};
+
+export const markMessagesRead = async (payload: ReadMessagePayload) => {
+  const client = await getDBClient();
+
+  const query = `
+  UPDATE messages
+  SET status = 'read'
+  WHERE conversation_id = $1 AND sender_id = $2
+  `;
+
+  const promise = client.query(query, [
+    payload.conversation_id,
+    payload.sender_id,
+  ]);
+
+  return await tryCatch(promise);
 };
